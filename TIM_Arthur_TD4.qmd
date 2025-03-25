@@ -137,22 +137,65 @@ Dans un marché aléatoire avec une racine unitaire, les chocs exogènes peuvent
 # TS vs. DS : simulation de processus
 
 
+```{r}
+set.seed(963)
 
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1/4  # Variance du bruit
 
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
 
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
 
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
 
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
 
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
 
+## Commentaire
 
+### DT
 
+Sur le graphique, la ligne rouge représente le processus DT. On observe une tendance linéaire claire avec des fluctuations mineures autour de cette tendance en raison du terme aléatoire $\epsilon_t$. La progression est régulière et prévisible, malgré les petites variations.
 
+### TS
 
+La ligne bleue représente le processus stochastique (TS). Contrairement au processus déterministe, la trajectoire est beaucoup moins prévisible. Bien qu'il y ait une tendance générale ascendante due à la constante positive (0.2), les fluctuations sont plus prononcées, et la série peut s'écarter significativement de la tendance linéaire en raison de l'accumulation des termes aléatoires. Ce processus est un exemple de marche aléatoire avec une dérive.
 
+### Comparaison
 
+  Le processus déterministe est plus prévisible, car il suit une trajectoire linéaire claire avec des déviations mineures. En revanche, le processus stochastique est moins prévisible en raison de l'accumulation des termes aléatoires, ce qui rend la trajectoire future plus incertaine.
 
+  Le processus stochastique montre une plus grande variabilité et des écarts plus importants par rapport à la tendance linéaire. Cela est dû à la nature cumulative des chocs aléatoires, qui peuvent déplacer la série de manière significative.
 
+  Bien que les deux processus montrent une tendance générale ascendante, la manière dont cette tendance est réalisée diffère. Le processus déterministe suit une progression régulière, tandis que le processus stochastique montre une progression plus irrégulière
 
+### Conclusion
+
+ Le processus déterministe offre une trajectoire plus stable et prévisible, tandis que le processus stochastique introduit une plus grande incertitude et variabilité.
 
 
 
