@@ -1,0 +1,161 @@
+---
+format: 
+  pdf:
+    documentclass: article
+    classoption: ["a4paper", "12pt", "fleqn"]
+    geometry: top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm
+    number-sections: true
+    toc: false  # Désactiver le sommaire automatique
+header-includes: |
+  \usepackage{hyperref}  % Liens cliquables
+  \hypersetup{
+    hidelinks  % Désactive complètement la mise en couleur des liens
+  }
+---
+
+```{=tex}
+\begin{titlepage}
+    \begin{center}
+        \vspace{\fill}  % Ajoute de l'espace flexible avant
+
+        {\LARGE \textbf{Séries temporelles univariées}}\\
+        \vspace{0.5cm}
+        {\Large M1 ECAP -- Séance 4 -- Année 2024/2025}\\
+        
+        \vspace{2cm}
+        
+        {\Large \textbf{TD4 ANALYSE DE LA NON-STATIONARITÉ ET RACINES UNITAIRES}}\\
+        \vspace{0.5cm}
+        \textit{Responsable d'enseignement : Benoît SÉVI}\\
+        \href{mailto:benoit.sevi@univ-nantes.fr}{benoit.sevi@univ-nantes.fr}\\
+        
+        \vspace{1.5cm}
+        
+        {\large \textbf{Timothée CADET, Arthur ERNOUL DE LA PROVOTE}}
+        
+        \vspace{\fill}  % Ajoute de l'espace flexible après
+        
+        {\large \today}
+    \end{center}
+\end{titlepage}
+\begingroup
+\hypersetup{linkcolor=black}
+\tableofcontents
+\endgroup
+```
+
+#  Chocs permanents vs. chocs transitoires : une analyse exploratoire
+
+```{r}
+#| output: false
+set.seed(123)  # Fixer la graine pour la reproductibilité
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+
+```{r}
+# Paramètres
+n <- 200  # Nombre d'observations
+phi_values <- c(0.5, 0.9, 1)  # Valeurs de phi
+shocks <- c(20, 40, -20, -40)  # Valeurs des chocs
+
+# Fonction pour simuler un AR(1) avec un choc
+simulate_AR1 <- function(phi, n, shock_value, shock_position = 100) {
+  Y <- numeric(n)
+  epsilon <- rnorm(n)  # Bruit blanc
+  for (t in 2:n) {
+    Y[t] <- phi * Y[t - 1] + epsilon[t]
+  }
+  Y[shock_position] <- Y[shock_position] + shock_value  # Ajouter le choc
+  return(Y)
+}
+
+# Simulation pour chaque combinaison (phi, choc)
+data_list <- list()
+for (shock in shocks) {
+  for (phi in phi_values) {
+    serie <- simulate_AR1(phi, n, shock)
+    df <- data.frame(
+      Time = 1:n,
+      Value = serie,
+      Phi = paste0("ϕ = ", phi),
+      Shock = paste0("Choc = ", shock)
+    )
+    data_list <- append(data_list, list(df))
+  }
+}
+
+# Fusionner toutes les séries
+data_all <- bind_rows(data_list)
+```
+
+
+```{r}
+# Graphique
+ggplot(data_all, aes(x = Time, y = Value, color = Phi)) +
+  geom_line() +
+  facet_wrap(~Shock, scales = "free_y") +
+  labs(title = "Simulation d'un AR(1) avec chocs exogènes",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+
+```
+
+
+
+## Que remarque-t-on ? 
+
+### Choc = 20, $\phi$ = 0,5
+
+Dans ce scénario, le paramètre $\phi$ est fixé à 0,5, ce qui signifie que le processus AR(1) est stationnaire. Lorsqu'un choc exogène = 20 est appliqué au temps 100, on observe que la série temporelle réagit immédiatement mais revient progressivement à son niveau d'équilibre. La réponse au choc est relativement rapide et amortie, indiquant une capacité de résilience face aux perturbations. Le choc a un effet temporaire, et la série retrouve son comportement initial après un certain temps. Cela illustre bien la nature stationnaire du processus où les chocs n'ont pas d'impact durable.
+
+### Choc = 20, $\phi$ = 0,9
+
+Ici, avec ρ à 0,9, le processus est toujours stationnaire mais plus persistant que dans le cas précédent. Un choc de 20 au temps 100 provoque une réaction plus prolongée dans le temps. La série met plus de temps à revenir à son état d'équilibre comparé au cas où $\phi$ est 0,5. Cela montre que, bien que le système soit stationnaire, la persistance élevée ($\phi$ proche de 1) fait que les chocs ont des effets qui se dissipent plus lentement. La série finit par retrouver son niveau initial, mais l'impact du choc est ressenti sur une période plus longue, soulignant l'importance de la persistance dans la dynamique du système.
+
+### Choc = 20, $\phi$ = 1
+
+Lorsque $\phi$ est égal à 1, le processus devient non stationnaire, caractérisé par une racine unitaire. Un choc de 20 au temps 100 a un effet permanent sur la série temporelle. Contrairement aux cas stationnaires, la série ne revient pas à son niveau d'équilibre initial après le choc. Au lieu de cela, elle se déplace à un nouveau niveau, reflétant l'impact durable du choc. Cela illustre la nature non stationnaire du processus où les chocs ont des conséquences à long terme. La présence d'une racine unitaire signifie que les perturbations peuvent fondamentalement altérer la trajectoire du système, rendant la prédiction future plus incertaine.
+
+
+### Choc = -20 & = 40 & = -40
+
+Les conclusions tirées sont les mêmes
+
+## Quel est l’impact d’un choc dans le cas d’une marche aléatoire ?
+
+Les graphes montrent clairement que lorsque $\phi$ = 1, un choc exogène (comme ceux appliqués aux temps 100) a un effet permanent sur la série temporelle, introduisant des déviations permanentes. Après le choc, la série ne revient pas à son niveau précédent, mais se stabilise à un nouveau niveau. Cela est visible dans les graphes où la ligne verte ($\phi$ = 1) montre un décalage permanent après le choc.
+
+##  Quelle est donc la conséquence de la présence d’une racine unitaire ?
+
+Dans un marché aléatoire avec une racine unitaire, les chocs exogènes peuvent déplacer le niveau de la série de manière permanente, rendant la prédiction à long terme difficile et incertaine.
+
+
+# TS vs. DS : simulation de processus
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
