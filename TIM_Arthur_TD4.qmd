@@ -48,7 +48,6 @@ header-includes: |
 
 ```{r}
 #| output: false
-set.seed(123)  # Fixer la graine pour la reproductibilité
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -56,6 +55,8 @@ library(tidyr)
 
 
 ```{r}
+set.seed(123)  # Fixer la graine pour la reproductibilité
+
 # Paramètres
 n <- 200  # Nombre d'observations
 phi_values <- c(0.5, 0.9, 1)  # Valeurs de phi
@@ -136,9 +137,10 @@ Dans un marché aléatoire avec une racine unitaire, les chocs exogènes peuvent
 
 # TS vs. DS : simulation de processus
 
+## N(0, 1/4)
 
 ```{r}
-set.seed(963)
+set.seed(015)
 
 # Paramètres
 n <- 200  # Nombre d'observations
@@ -175,7 +177,49 @@ ggplot(data, aes(x = Time, y = Value, color = Process)) +
   theme_minimal()
 ```
 
-## Commentaire
+
+```{r}
+set.seed(001)
+
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1/4  # Variance du bruit
+
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
+
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
+
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
+
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
+
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
+
+
+## Commentaire Loi Normal (0, 1/4)
+
+On fait plusieurs graphiques pour ne pas tomber sur un cas atypique et avoir une meilleure qualité d'analyse.
 
 ### DT
 
@@ -196,9 +240,86 @@ La ligne bleue représente le processus stochastique (TS). Contrairement au proc
 ### Conclusion
 
  Le processus déterministe offre une trajectoire plus stable et prévisible, tandis que le processus stochastique introduit une plus grande incertitude et variabilité.
+Le processus déterministe est plus proche de sa tendance contrairement au processus stochastique.
 
 
+## N(0, 1/2)
 
+```{r}
+set.seed(015)
 
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1/2  # Variance du bruit
+
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
+
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
+
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
+
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
+
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
+
+```{r}
+
+set.seed(001)
+
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1/2  # Variance du bruit
+
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
+
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
+
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
+
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
+
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
 
 
