@@ -217,7 +217,7 @@ ggplot(data, aes(x = Time, y = Value, color = Process)) +
 ```
 
 
-## Commentaire Loi Normal (0, 1/4)
+## Commentaire:  Loi Normal (0, 1/4)
 
 On fait plusieurs graphiques pour ne pas tomber sur un cas atypique et avoir une meilleure qualité d'analyse.
 
@@ -323,3 +323,115 @@ ggplot(data, aes(x = Time, y = Value, color = Process)) +
 ```
 
 
+## N(0, 1)
+
+```{r}
+set.seed(015)
+
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1  # Variance du bruit
+
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
+
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
+
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
+
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
+
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
+
+```{r}
+
+set.seed(001)
+
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1  # Variance du bruit
+
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
+
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
+
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
+
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
+
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
+
+## Commentaire:  Loi Normal (0, 1/2) et (0, 1)
+
+On examine comment l'augmentation de la variance affecte les processus déterministe (DT) et stochastique (TS).
+
+### N(0, 1/2)
+
+ La variance est deux fois plus grande que celle de N(0,1/4). Cela signifie que les fluctuations autour de la tendance seront plus prononcées.
+
+#### DT
+
+La tendance linéaire reste visible, mais les fluctuations autour de cette tendance sont plus légèrement plus importantes. 
+
+#### TS
+
+Les écarts par rapport à la tendance linéaire sont plus marqués.
+La tendance linéaire reste visible.
+
+### N(0, 1)
+
+La variance est quatre fois plus grande que celle de N(0,1/4).
+
+#### DT
+
+Les écarts sont encore plus prononcés, avec des fluctuations importantes autour de la tendance linéaire.
+
+#### TS
+
+Les écarts sont très marqués, avec une trajectoire qui s'écarte considérablement de la tendance linéaire.
+
+
+### Conclusion
+
+En résumé, l'augmentation de la variance dans les processus N(0,1/2) et N(0,1) entraîne des écarts plus importants par rapport à la tendance, en particulier pour le processus stochastique. Le processus déterministe, bien que plus stable, voit également ses écarts augmenter.
