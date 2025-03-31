@@ -44,96 +44,96 @@ header-includes: |
 \endgroup
 ```
 
+\newpage
+
 #  Chocs permanents vs. chocs transitoires : une analyse exploratoire
 
 ```{r}
 #| output: false
+library(stats)
 library(ggplot2)
-library(dplyr)
-library(tidyr)
 ```
 
 
 ```{r}
-set.seed(123)  # Fixer la graine pour la reproductibilité
-
-# Paramètres
-n <- 200  # Nombre d'observations
-phi_values <- c(0.5, 0.9, 1)  # Valeurs de phi
-shocks <- c(20, 40, -20, -40)  # Valeurs des chocs
-
-# Fonction pour simuler un AR(1) avec un choc
-simulate_AR1 <- function(phi, n, shock_value, shock_position = 100) {
+simulate_ar1 <- function(phi, choc_value, choc_time = 100, n = 200) {
   Y <- numeric(n)
-  epsilon <- rnorm(n)  # Bruit blanc
+  eps <- rnorm(n, mean = 0, sd = 1)
+  
   for (t in 2:n) {
-    Y[t] <- phi * Y[t - 1] + epsilon[t]
+    Y[t] <- phi * Y[t - 1] + eps[t]
+    if (t == choc_time) {
+      Y[t] <- Y[t] + choc_value
+    }
   }
-  Y[shock_position] <- Y[shock_position] + shock_value  # Ajouter le choc
   return(Y)
 }
 
-# Simulation pour chaque combinaison (phi, choc)
-data_list <- list()
-for (shock in shocks) {
-  for (phi in phi_values) {
-    serie <- simulate_AR1(phi, n, shock)
+set.seed(777)
+
+
+phi_vals <- c(0.5, 0.9, 1.0)
+chocs <- c(20, 40, -20, -40)
+
+# Stocker les résultats dans une data.frame
+results <- data.frame()
+
+for (choc in chocs) {
+  for (phi in phi_vals) {
+    serie <- simulate_ar1(phi, choc)
     df <- data.frame(
-      Time = 1:n,
-      Value = serie,
-      Phi = paste0("ϕ = ", phi),
-      Shock = paste0("Choc = ", shock)
+      t = 1:200,
+      Y = serie,
+      phi = paste0("phi = ", phi),
+      choc = paste0("Choc = ", choc)
     )
-    data_list <- append(data_list, list(df))
+    results <- rbind(results, df)
   }
 }
-
-# Fusionner toutes les séries
-data_all <- bind_rows(data_list)
-```
-
-
-```{r}
-# Graphique
-ggplot(data_all, aes(x = Time, y = Value, color = Phi)) +
+ggplot(results, aes(x = t, y = Y, color = phi)) +
   geom_line() +
-  facet_wrap(~Shock, scales = "free_y") +
-  labs(title = "Simulation d'un AR(1) avec chocs exogènes",
-       x = "Temps",
-       y = "Valeur de la série") +
-  theme_minimal()
+  facet_wrap(~choc, scales = "free_y") +
+  labs(title = "Impact de chocs à t=100 pour différentes valeurs de ϕ₁",
+       x = "Temps", y = "Y_t") +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+
+library(ggplot2)
+simulate_ar1 <- function(phi, choc_value, choc_time = 100, n = 200) {
+  Y <- numeric(n)
+  eps <- rnorm(n, mean = 0, sd = 1)
+  
+  for (t in 2:n) {
+    Y[t] <- phi * Y[t - 1] + eps[t]
+    if (t == choc_time) {
+      Y[t] <- Y[t] + choc_value
+    }
+  }
+  return(Y)
+}
 
 ```
 
+## Impact des chocs :
 
+On observe que l'impact d'un choc dépend fortement de la valeur de ϕ. Pour  ϕ = 1, qui correspond à une racine unitaire, le choc a un effet persistant et la série ne retourne pas à son niveau initial. Pour ϕ = 0.9, l'effet du choc est également persistant mais très atténué par rapport à ϕ = 1 et revient à son niveau initial. Enfin, pour ϕ = 0.5, l'effet du choc est plus temporaire et la série tend à revenir vers son niveau initial plus rapidement.
 
-## Que remarque-t-on ? 
+Dans une marche aléatoire avec une racine unitaire, les chocs exogènes peuvent déplacer le niveau de la série de manière permanente, rendant la prédiction à long terme difficile et incertaine.
 
-### Choc = 20, $\phi$ = 0,5
+## Comparaison entre les chocs :
 
-Dans ce scénario, le paramètre $\phi$ est fixé à 0,5, ce qui signifie que le processus AR(1) est stationnaire. Lorsqu'un choc exogène = 20 est appliqué au temps 100, on observe que la série temporelle réagit immédiatement mais revient progressivement à son niveau d'équilibre. La réponse au choc est relativement rapide et amortie, indiquant une capacité de résilience face aux perturbations. Le choc a un effet temporaire, et la série retrouve son comportement initial après un certain temps. Cela illustre bien la nature stationnaire du processus où les chocs n'ont pas d'impact durable.
+Les chocs positifs (20, 40) augmentent la valeur de la série, tandis que les chocs négatifs (-20, -40) la diminuent. L'amplitude du choc influence la magnitude de l'impact, mais la persistance de cet impact dépend de la valeur de ϕ.
 
-### Choc = 20, $\phi$ = 0,9
+## Impact d'un choc dans le cas d'une marche aléatoire
 
-Ici, avec ρ à 0,9, le processus est toujours stationnaire mais plus persistant que dans le cas précédent. Un choc de 20 au temps 100 provoque une réaction plus prolongée dans le temps. La série met plus de temps à revenir à son état d'équilibre comparé au cas où $\phi$ est 0,5. Cela montre que, bien que le système soit stationnaire, la persistance élevée ($\phi$ proche de 1) fait que les chocs ont des effets qui se dissipent plus lentement. La série finit par retrouver son niveau initial, mais l'impact du choc est ressenti sur une période plus longue, soulignant l'importance de la persistance dans la dynamique du système.
+Dans le cas d'une marche aléatoire, représentée ici par ϕ=1, un choc a un effet permanent sur la série temporelle. Cela signifie que la série ne redeviendra pas stationnaire après le choc ; elle intégrera ce choc de manière permanente.
 
-### Choc = 20, $\phi$ = 1
+## Conséquence dans le cas d'une marche aléatoire
 
-Lorsque $\phi$ est égal à 1, le processus devient non stationnaire, caractérisé par une racine unitaire. Un choc de 20 au temps 100 a un effet permanent sur la série temporelle. Contrairement aux cas stationnaires, la série ne revient pas à son niveau d'équilibre initial après le choc. Au lieu de cela, elle se déplace à un nouveau niveau, reflétant l'impact durable du choc. Cela illustre la nature non stationnaire du processus où les chocs ont des conséquences à long terme. La présence d'une racine unitaire signifie que les perturbations peuvent fondamentalement altérer la trajectoire du système, rendant la prédiction future plus incertaine.
+La présence d'une racine unitaire (ϕ=1) implique que la série temporelle est non stationnaire. Les chocs exogènes ont un impact durable et persistent dans le temps, ce qui rend la série imprévisible à long terme.Cela signifie que les chocs passés ne sont pas simplement des perturbations temporaires mais influencent de manière permanente l'évolution future de la série.
 
-
-### Choc = -20 & = 40 & = -40
-
-Les conclusions tirées sont les mêmes
-
-## Quel est l’impact d’un choc dans le cas d’une marche aléatoire ?
-
-Les graphes montrent clairement que lorsque $\phi$ = 1, un choc exogène (comme ceux appliqués aux temps 100) a un effet permanent sur la série temporelle, introduisant des déviations permanentes. Après le choc, la série ne revient pas à son niveau précédent, mais se stabilise à un nouveau niveau. Cela est visible dans les graphes où la ligne verte ($\phi$ = 1) montre un décalage permanent après le choc.
-
-##  Quelle est donc la conséquence de la présence d’une racine unitaire ?
-
-Dans un marché aléatoire avec une racine unitaire, les chocs exogènes peuvent déplacer le niveau de la série de manière permanente, rendant la prédiction à long terme difficile et incertaine.
-
+\newpage
 
 # TS vs. DS : simulation de processus
 
@@ -242,10 +242,13 @@ La ligne bleue représente le processus stochastique (TS). Contrairement au proc
  Le processus déterministe offre une trajectoire plus stable et prévisible, tandis que le processus stochastique introduit une plus grande incertitude et variabilité.
 Le processus déterministe est plus proche de sa tendance contrairement au processus stochastique.
 
+\newpage
 
-## N(0, 1/2)
+## N(0, 1/2) seed(015)
 
 ```{r}
+#| echo: false
+
 set.seed(015)
 
 # Paramètres
@@ -283,8 +286,54 @@ ggplot(data, aes(x = Time, y = Value, color = Process)) +
   theme_minimal()
 ```
 
+## N(0, 1) seed(015)
 ```{r}
+#| echo: false
 
+set.seed(015)
+
+# Paramètres
+n <- 200  # Nombre d'observations
+sigma2 <- 1  # Variance du bruit
+
+epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
+
+# Simulation des processus
+Y_DT <- numeric(n)
+Y_TS <- numeric(n)
+
+for (t in 1:n) {
+  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
+  if (t == 1) {
+    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
+  } else {
+    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
+  }
+}
+
+# Création du DataFrame
+data <- data.frame(
+  Time = rep(1:n, 2),
+  Value = c(Y_DT, Y_TS),
+  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
+)
+
+# Graphique
+ggplot(data, aes(x = Time, y = Value, color = Process)) +
+  geom_line() +
+  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
+       x = "Temps",
+       y = "Valeur de la série") +
+  theme_minimal()
+```
+
+\newpage
+
+
+## N(0, 1/2) seed (001)
+
+```{r}
+#| echo: false
 set.seed(001)
 
 # Paramètres
@@ -323,48 +372,11 @@ ggplot(data, aes(x = Time, y = Value, color = Process)) +
 ```
 
 
-## N(0, 1)
+## N(0, 1) seed (001)
+
 
 ```{r}
-set.seed(015)
-
-# Paramètres
-n <- 200  # Nombre d'observations
-sigma2 <- 1  # Variance du bruit
-
-epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2))  # Génération du bruit blanc
-
-# Simulation des processus
-Y_DT <- numeric(n)
-Y_TS <- numeric(n)
-
-for (t in 1:n) {
-  Y_DT[t] <- 0.2 * t + epsilon[t]  # Processus déterministe
-  if (t == 1) {
-    Y_TS[t] <- epsilon[t]  # Initialisation du processus stochastique
-  } else {
-    Y_TS[t] <- 0.2 + Y_TS[t - 1] + epsilon[t]  # Processus stochastique
-  }
-}
-
-# Création du DataFrame
-data <- data.frame(
-  Time = rep(1:n, 2),
-  Value = c(Y_DT, Y_TS),
-  Process = rep(c("DT: Yt = 0.2t + εt", "TS: Yt = 0.2 + Yt-1 + εt"), each = n)
-)
-
-# Graphique
-ggplot(data, aes(x = Time, y = Value, color = Process)) +
-  geom_line() +
-  labs(title = "Comparaison entre un processus déterministe et un processus stochastique",
-       x = "Temps",
-       y = "Valeur de la série") +
-  theme_minimal()
-```
-
-```{r}
-
+#| echo: false
 set.seed(001)
 
 # Paramètres
@@ -435,3 +447,275 @@ Les écarts sont très marqués, avec une trajectoire qui s'écarte considérabl
 ### Conclusion
 
 En résumé, l'augmentation de la variance dans les processus N(0,1/2) et N(0,1) entraîne des écarts plus importants par rapport à la tendance, en particulier pour le processus stochastique. Le processus déterministe, bien que plus stable, voit également ses écarts augmenter.
+
+\newpage
+
+
+# Régressions fallacieuses
+
+## Quel pourcentage de rejet de l’hypothèse H0 : β1 = 0 au taux de 5% obtient-on ?
+
+```{r}
+
+set.seed(123) 
+library(MASS)
+
+n_simulations <- 5000  
+n_observations <- 200 
+alpha <- 0.05  # Niveau de test de 5%
+
+reject_count <- 0  # Compteur de rejets de H0
+
+for (i in 1:n_simulations) {
+  # Génération de deux marches aléatoires 
+  Xt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  Yt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  
+  # Régression Yt = B0 + B1Xt + nt
+  model <- lm(Yt ~ Xt)
+  
+  # Extraction de la p-valeur pour H0 : β1 = 0
+  p_value <- summary(model)$coefficients[2, 4]
+  
+  # Test au seuil de 5%
+  if (p_value < alpha) {
+    reject_count <- reject_count + 1
+  }
+}
+
+
+# Pourcentage de rejets de H0
+rejection_rate <- (reject_count / n_simulations) * 100
+cat("Pourcentage de rejets de H0 (β1 = 0) :", rejection_rate, "%\n")
+```
+
+On a un risque élevé de régression fallacieuse car on a un taux de rejet largement supérieur à 5%. Augmenter le nombre de simulation réduit le pourcentage de rejets de H0.A l'inverse, augmenter le nombre d'observation va augmenter le pourcentage de rejet de H0.
+
+## Vos résultats dépendent-ils du nombre d’observations choisi pour chaque série ou bien du nombre de séries générées ?
+
+### obs : 200 , simulation : 10 000
+
+```{r}
+#| echo: false
+
+set.seed(123) 
+library(MASS)
+
+n_simulations <- 10000  
+n_observations <- 200 
+alpha <- 0.05  # Niveau de test de 5%
+
+reject_count <- 0  # Compteur de rejets de H0
+
+for (i in 1:n_simulations) {
+  # Génération de deux marches aléatoires 
+  Xt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  Yt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  
+  # Régression Yt = B0 + B1Xt + nt
+  model <- lm(Yt ~ Xt)
+  
+  # Extraction de la p-valeur pour H0 : β1 = 0
+  p_value <- summary(model)$coefficients[2, 4]
+  
+  # Test au seuil de 5%
+  if (p_value < alpha) {
+    reject_count <- reject_count + 1
+  }
+}
+
+# Pourcentage de rejets de H0
+rejection_rate <- (reject_count / n_simulations) * 100
+cat("Pourcentage de rejets de H0 (β1 = 0) :", rejection_rate, "%\n")
+
+```
+
+
+### obs : 400 , simulation : 5 000
+
+```{r}
+#| echo: false
+
+set.seed(123) 
+library(MASS)
+
+n_simulations <- 5000  
+n_observations <- 400 
+alpha <- 0.05  # Niveau de test de 5%
+
+reject_count <- 0  # Compteur de rejets de H0
+
+for (i in 1:n_simulations) {
+  # Génération de deux marches aléatoires 
+  Xt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  Yt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  
+  # Régression Yt = B0 + B1Xt + nt
+  model <- lm(Yt ~ Xt)
+  
+  # Extraction de la p-valeur pour H0 : β1 = 0
+  p_value <- summary(model)$coefficients[2, 4]
+  
+  # Test au seuil de 5%
+  if (p_value < alpha) {
+    reject_count <- reject_count + 1
+  }
+}
+
+# Pourcentage de rejets de H0
+rejection_rate <- (reject_count / n_simulations) * 100
+cat("Pourcentage de rejets de H0 (β1 = 0) :", rejection_rate, "%\n")
+
+```
+
+
+
+### obs : 100 , simulation : 5 000
+
+```{r}
+#| echo: false
+
+set.seed(123) 
+library(MASS)
+
+n_simulations <- 5000  
+n_observations <- 100 
+alpha <- 0.05  # Niveau de test de 5%
+
+reject_count <- 0  # Compteur de rejets de H0
+
+for (i in 1:n_simulations) {
+  # Génération de deux marches aléatoires 
+  Xt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  Yt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  
+  # Régression Yt = B0 + B1Xt + nt
+  model <- lm(Yt ~ Xt)
+  
+  # Extraction de la p-valeur pour H0 : β1 = 0
+  p_value <- summary(model)$coefficients[2, 4]
+  
+  # Test au seuil de 5%
+  if (p_value < alpha) {
+    reject_count <- reject_count + 1
+  }
+}
+
+# Pourcentage de rejets de H0
+rejection_rate <- (reject_count / n_simulations) * 100
+cat("Pourcentage de rejets de H0 (β1 = 0) :", rejection_rate, "%\n")
+
+```
+
+
+### obs : 200 , simulation :  2500
+
+```{r}
+#| echo: false
+
+set.seed(123) 
+library(MASS)
+
+n_simulations <- 2500  
+n_observations <- 200 
+alpha <- 0.05  # Niveau de test de 5%
+
+reject_count <- 0  # Compteur de rejets de H0
+
+for (i in 1:n_simulations) {
+  # Génération de deux marches aléatoires 
+  Xt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  Yt <- cumsum(rnorm(n_observations, mean = 0, sd = 1))
+  
+  # Régression Yt = B0 + B1Xt + nt
+  model <- lm(Yt ~ Xt)
+  
+  # Extraction de la p-valeur pour H0 : β1 = 0
+  p_value <- summary(model)$coefficients[2, 4]
+  
+  # Test au seuil de 5%
+  if (p_value < alpha) {
+    reject_count <- reject_count + 1
+  }
+}
+
+# Pourcentage de rejets de H0
+rejection_rate <- (reject_count / n_simulations) * 100
+cat("Pourcentage de rejets de H0 (β1 = 0) :", rejection_rate, "%\n")
+```
+
+
+## Commentaire
+
+Après avoir fait varié le nombre d’observation (100, 200, 400) et le nombre de simulation de la série (2500, 5000, 10 000), avec une base à 200 observations et 5000 simulations. 
+
+### Variation Observations
+
+88,16% pour 400 ;
+83,52% pour 200 ;
+76,5% pour 100 
+
+
+### Variation simulations
+
+82,96% pour 10 000 ;
+83,52% pour 5 000 ;
+83,48% pour 2 500 
+
+### Conclusion
+
+Nous pouvons voir que la variation du pourcentage de rejet H0 à 5% varie bien plus significativement lorsque nous modifions le nombre d'observations.
+Ainsi nos résultats dépendent plus du nombre d'observations que du nombre de simulations de la série.
+
+# Exercice 4: Distribution de la statistique de test de Dickey-Fuller pour le modèle sans constante ni tendance via la méthode de Monte Carlo
+
+```{r}
+
+library(tseries)
+library(urca)
+
+# Définir les paramètres
+n_simulations <- 10000  # Nombre de simulations
+n_observations <- 100   # Nombre d'observations par série
+t_stats <- numeric(n_simulations)  # Stocker les statistiques de test
+
+set.seed(123)  # Pour la reproductibilité
+for (i in 1:n_simulations) {
+  Y <- numeric(n_observations)  # Initialisation de la série
+  for (t in 2:n_observations) {
+    Y[t] <- Y[t-1] + rnorm(1)  # Processus racine unitaire
+  }
+  
+  # Test de Dickey-Fuller sans constante ni tendance
+  test_result <- ur.df(Y, type="none", lags=0)
+  t_stats[i] <- test_result@teststat
+}
+
+# Tracer l'histogramme des statistiques de test
+hist(t_stats, breaks=50, probability=TRUE, main="Distribution de la statistique de test de Dickey-Fuller",
+     xlab="Valeur de la statistique de test", col="lightblue", border="black")
+abline(v=quantile(t_stats, c(0.1, 0.05, 0.01)), col=c("red", "blue", "green"), lwd=2, lty=2)
+
+# Calculer les valeurs critiques empiriques
+valeurs_critiques <- quantile(t_stats, c(0.1, 0.05, 0.01))
+names(valeurs_critiques) <- c("10%", "5%", "1%")
+
+# Afficher les résultats
+print("Valeurs critiques obtenues par Monte Carlo :")
+print(valeurs_critiques)
+
+
+
+#Un plus pour comparer avec les valeurs théoriques
+# Comparaison avec les valeurs théoriques de la table Dickey-Fuller
+valeurs_theoriques <- c(-2.66, -1.95, -1.61)  # Extraites de la table pour T=100
+names(valeurs_theoriques) <- c("1%", "5%", "10%")
+
+print("Valeurs critiques de la table Dickey-Fuller :")
+print(valeurs_theoriques)
+```
+
+
+
+Les valeurs critiques obtenus par Monte-Carlo sont similaires aux valeurs critiques présentent dans la table. !!! pour 1% ça s'éloigne plus.
+
